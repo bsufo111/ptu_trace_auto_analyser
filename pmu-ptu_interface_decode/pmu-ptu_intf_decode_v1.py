@@ -5,11 +5,14 @@ Created on 2015年3月24日
 @author: wadefu
 '''
 import re
+import copy
 struct_name_index = 0
 struct_name1_index = 1
-struct_field_num_index = 2
-struct_total_size_index = 3
-struct_redecode_flag_index = 4
+msg_name_index = 2
+struct_redecode_flag_index = 3
+struct_field_num_index = 4
+struct_total_size_index = 5
+
 #struct_index = -1
 
 class pmuptu_basic_struct(object):
@@ -41,6 +44,8 @@ class pmuptu_basic_struct(object):
         pat2 = self.pat2
         pat3 = self.pat3
         pat4 = self.pat4
+        union = []
+        find_union_flag = 0
 #        result = self.basic_struct
         while True:
             if read_line_noneed == 0:
@@ -67,23 +72,55 @@ class pmuptu_basic_struct(object):
                     struct_index = -1           # restart to count
                 elif pat3:
                     if pat3 in line:
-                        begin_struct_decoder = 2    # pmu-ptu msg struct
+                        begin_struct_decoder = 2    # pmu-ptu msg struct for PMU
+#                        print '!!!!!!!!!!!!!enter into pmu area!!!!!!!!!!!!!'
+
+                        result = self.result
+                        struct_index = -1           # restart to count
+#                elif pat4:
+                    if pat4 in line:
+                        begin_struct_decoder = 3    # pmu-ptu msg struct for PTU
+#                        print '!!!!!!!!!!!!!enter into ptu area!!!!!!!!!!!!!'
                         result = self.result
                         struct_index = -1           # restart to count
                     
                     
                         
-            if begin_struct_decoder >= 1:
-                if 'typedef struct' in line:
+            if begin_struct_decoder >=1:
+                if 'typedef' in line and 'union' in line:
+                    find_union_flag = 1
+                    
+                if 'typedef' in line and 'struct' in line:
                     find_struct_flag=1              #find one struct
                     num=0                           #indicate the index of field in a struct
                     linelist=line.split()
         #            linelist[2]=linelist[2].strip(' {\n')
         #            print linelist[2]
-                    result.append([['','',0,0,0],[]])
+                    result.append([['','','',0,0,0],[]])
                     count+=1
                     struct_index+=1
                     continue
+                elif 'typedef' in line and not 'union' in line and not 'enum' in line and begin_struct_decoder == 2:
+                    typedef_list_pmu = line.split()
+                    typedef_list_pmu[2] = typedef_list_pmu[2].strip(',; ')
+                    typedef_decode_list = self.re_decode_one_struct(self.search_list+self.basic_struct+self.result, typedef_list_pmu[1])
+#                    if not typedef_decode_list: continue
+                    typedef_decode_list1 = copy.deepcopy(typedef_decode_list)
+                    print typedef_decode_list1
+                    print typedef_list_pmu
+                    write_to_file('test.txt', self.search_list+self.basic_struct+self.result)
+
+                    typedef_decode_list1[0][struct_name_index] = typedef_list_pmu[2]
+                    typedef_decode_list1[0][struct_name1_index] = typedef_list_pmu[2]+'_t'
+                    result.append(typedef_decode_list1)
+
+#                     result.append(typedef_decode_list)
+                    count+=1
+                    struct_index+=1
+#                     result[struct_index][0][struct_name_index] = typedef_list_pmu[2]
+#                     result[struct_index][0][struct_name1_index] = typedef_list_pmu[2]+'_t'
+                    continue
+                    
                 if find_struct_flag == 1:                              
                     if '}' in line:                     #end of struct
                         find_struct_flag=0
@@ -165,10 +202,11 @@ class pmuptu_basic_struct(object):
                         result[struct_index][0][struct_total_size_index] += size
                         result[struct_index][0][struct_field_num_index] += 1         #the number of fields of this struct add 1
         pmuptu_file.close()
+        print self.pmuptu_filename
         print count
         print
 
-    def re_decode_one_struct(self,search_list, struct_name):
+    def re_decode_one_struct(self, search_list, struct_name):
         for item in search_list:
             if item[0][struct_name_index] == struct_name or item[0][struct_name1_index] == struct_name:
                 return item        # [['','',0,0,0],[]]
@@ -199,9 +237,9 @@ def print_struct(struct_list):
         print
 def write_to_file(file_name, struct_list):
     if not struct_list:
-        print '###################'
-        print '# No item in list #'
-        print '###################'
+        print '##########################################'
+        print '# No item in list, '+file_name+' #'
+        print '##########################################'
         return
     file = open(file_name,'w+')
     if not file:
