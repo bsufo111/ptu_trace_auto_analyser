@@ -114,7 +114,7 @@ class pmuptu_basic_struct(object):
                     typedef_list_pmu = line.split()
                     typedef_list_pmu[2] = typedef_list_pmu[2].strip(',; ')
                     typedef_decode_list = self.re_decode_one_struct(self.search_list+self.basic_struct+self.result, typedef_list_pmu[1])
-#                    if not typedef_decode_list: continue
+                    if not typedef_decode_list: continue
                     typedef_decode_list1 = copy.deepcopy(typedef_decode_list)
 #                     print typedef_decode_list1
 #                     print typedef_list_pmu
@@ -130,6 +130,15 @@ class pmuptu_basic_struct(object):
 #                     result[struct_index][0][struct_name_index] = typedef_list_pmu[2]
 #                     result[struct_index][0][struct_name1_index] = typedef_list_pmu[2]+'_t'
                     continue
+                if begin_struct_decoder == 3 and 'typedef' in line:
+                    typedef_list_ptu = line.split()
+                    typedef_list_ptu[2] = typedef_list_ptu[2].strip(',; ')
+                    msg_name = typedef_list_ptu[2][:-5]
+                    print msg_name
+                    typedef_decode_list_ptu = self.re_decode_one_struct(self.search_list+self.basic_struct+self.result, typedef_list_ptu[1])
+                    if not typedef_decode_list_ptu: continue
+                    typedef_decode_list_ptu[0][msg_name_index] = msg_name
+                    
                 
                 if find_union_flag == 1:
 #                    union_list = [['','','',0,0,0],[]]
@@ -245,6 +254,7 @@ class pmuptu_basic_struct(object):
                                     if mul == 1:                                                                       
                                         for subitem in redecode_list[1]:
                                             result[struct_index][1].append(subitem)
+#                                            result[struct_index][1].append([subitem[0], linelist2[1]+'.'+subitem[1],subitem[2]])
                                         
                                     else:
                                         for k in range(mul):
@@ -320,7 +330,11 @@ def write_to_file(file_name, struct_list):
         return
     for struct_item in struct_list:
         file.writelines(['\n'])
-        header_str = struct_item[0][struct_name_index]+', '+struct_item[0][struct_name1_index]+', '+str(struct_item[0][union_item_num_index])
+        if struct_item[0][msg_name_index]:
+            msg_str = struct_item[0][msg_name_index]+', '
+        else:
+            msg_str = ''
+        header_str = struct_item[0][struct_name_index]+', '+struct_item[0][struct_name1_index]+', '+msg_str+str(struct_item[0][union_item_num_index])
         if struct_item[0][union_item_num_index] > 0:
             for i in range(struct_item[0][union_item_num_index]):
                 header_str += (', '+str(struct_item[0][struct_field_num_index+i*2])+', '+str(struct_item[0][struct_total_size_index+i*2]))
