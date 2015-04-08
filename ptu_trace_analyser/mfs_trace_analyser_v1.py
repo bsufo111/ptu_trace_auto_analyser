@@ -72,7 +72,18 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
             if ptuId > 3:
                 print '!!!!!abnormal case: ptuId > 3, in line '+line_no+' in'+file_name
                 continue
-            msg_content = msg_struct_content[ptuId_index+10:]    #record msg content
+            if msg_struct_name == 'TrxSysDefineReq':
+                msg_content = msg_struct_content[ptuId_index+10+11:].strip(' ')    #record msg content
+                mfstrace_file.next()     # next line is only a \n
+                line = mfstrace_file.next()     # next line includes the next part of TrxSysDefineReq
+                if not 'TrxSysDefineReq' in line:
+                    print '###### can not find the next part of msg TrxSysDefineReq'
+                else:
+                    msg_content += line.split(':')[-1].strip(' \n')
+                    print msg_content
+            else:
+                msg_content = msg_struct_content[ptuId_index+10:].strip(' ')    #record msg content
+                
             
             temp_index = msg_content.find('[and')
             if temp_index != -1:
@@ -89,6 +100,8 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
 #             print time_list    
              
             msg_content_len = int(msg_content[:4],16)
+            if msg_struct_name == 'TrxSysDefineReq':
+                print msg_content_len
             msg_content_header = msg_content[:16]
             msg_content_body = msg_content[16:]
             if 2*msg_content_len > len(msg_content):
@@ -124,12 +137,15 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
                     continue
                 else:
                     struct_index = 1
-            else:    
-                for i in range(int(search_item[0][union_item_num_index])):
-                    if msg_content_len - 8 <= search_item[0][struct_total_size_index+i*2]:
-                        struct_index = 1+i
+            else:
+                print 'enter into union_item_num !=0, it is: '+str(search_item[0][union_item_num_index])+' in msg: '+search_item[0][struct_name_index]    
+                for ii in range(int(search_item[0][union_item_num_index])):
+                    if msg_content_len - 8 <= search_item[0][struct_total_size_index+ii*2]:
+                        struct_index = 1+ii
+                        break
                     else:
                         continue
+                print 'struct_index is: '+str(struct_index)
             if struct_index == 0:
                 print msg_struct_name+':'
                 print 'msg length is not correct:  trace msg length: '+str(msg_content_len)
@@ -176,7 +192,7 @@ if __name__ == '__main__':
 #     pmuptu_intf_dir = argv[2]
 #     mfs_trace_file = argv[1]
     pmuptu_intf_dir = r'pmuptu\\'
-    mfs_trace_file = r'mfs_trace_p_3_54.old.03-06-07-26-48(0).txt'
+    mfs_trace_file = r'mfs_trace_p_3_53.old.03-17-13-03-32.txt'
 #     print argv[0]
 #     print argv[1]
 #     print argv[2]
