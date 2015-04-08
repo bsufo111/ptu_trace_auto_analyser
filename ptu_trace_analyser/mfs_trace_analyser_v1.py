@@ -6,7 +6,8 @@ Created on 2015.3.25
 '''
 import sys
 sys.path.append(r'D:\Study\python\python_project\eclipse_workspace\ptu_trace_auto_analyser\src')
-from pmuptu_interface_decode.pmuptu_intf_decode_v1 import pmuptu_basic_struct, pmuptu_struct, write_to_file, struct_name_index, struct_name1_index, msg_name_index, union_item_num_index, struct_redecode_flag_index, struct_field_num_index, struct_total_size_index
+#from pmuptu_interface_decode.pmuptu_intf_decode_v1 import pmuptu_basic_struct, pmuptu_struct, write_to_file, struct_name_index, struct_name1_index, msg_name_index, union_item_num_index, struct_redecode_flag_index, struct_field_num_index, struct_total_size_index
+from pmuptu_interface_decode.pmuptu_intf_decode_v1 import *
 from sys import argv
 
 
@@ -90,15 +91,22 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
             msg_content_len = int(msg_content[:4],16)
             msg_content_header = msg_content[:16]
             msg_content_body = msg_content[16:]
+            if 2*msg_content_len > len(msg_content):
+                msg_content_body += '0'*(2*msg_content_len-len(msg_content))
 #             print msg_content_len
 #             print msg_content_header
 #             written_str_list = [line_no+', '+'/'.join(date_list)+','+':'.join(time_list)+', ']
 #             result_dspx_file_open_list[ptuId].writelines(written_str_list)
             msg_name = ''
+#             for search_item in pmuptu_intf_list:
+#                 if msg_struct_name.lower() == search_item[0][struct_name_index].lower() or msg_struct_name.lower() == search_item[0][struct_name1_index].lower():
+#                     msg_name = search_item[0][msg_name_index]
+#                     break
             for search_item in pmuptu_intf_list:
-                if msg_struct_name.lower() == search_item[0][struct_name_index].lower() or msg_struct_name.lower() == search_item[0][struct_name1_index].lower():
+                if msg_content_header[6:8] == search_item[0][msg_type_index]:
                     msg_name = search_item[0][msg_name_index]
                     break
+            
             if msg_name == '':
                 print 'can not find the struct name: '+msg_struct_name
                 continue
@@ -110,7 +118,7 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
             
             struct_index = 0
             if search_item[0][union_item_num_index] == 0:
-                if search_item[0][struct_total_size_index] != msg_content_len - 8:
+                if search_item[0][struct_total_size_index] < msg_content_len - 8:
                     print msg_struct_name+':'
                     print 'msg length is not correct: struct length:'+str(search_item[0][struct_total_size_index])+' , trace msg length: '+str(msg_content_len)
                     continue
@@ -118,8 +126,10 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
                     struct_index = 1
             else:    
                 for i in range(int(search_item[0][union_item_num_index])):
-                    if msg_content_len - 8 == search_item[0][struct_total_size_index+i*2]:
+                    if msg_content_len - 8 <= search_item[0][struct_total_size_index+i*2]:
                         struct_index = 1+i
+                    else:
+                        continue
             if struct_index == 0:
                 print msg_struct_name+':'
                 print 'msg length is not correct:  trace msg length: '+str(msg_content_len)
@@ -127,14 +137,25 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
             written_str = ''
             i = 0
             for field_item in search_item[struct_index]:
+#                 if i >= len(msg_content_body):
+#                     written_str += field_item[1]+' :  '+'0'*field_item[2]*2+' '*10
+#                 else:
+#                     written_str += field_item[1]+' :  '+msg_content_body[i:i+field_item[2]*2]+' '*10
                 if i >= len(msg_content_body):
-                    written_str += field_item[1]+' :  '+'0'*field_item[2]*2+' '*10
+                    break
                 else:
-                    written_str += field_item[1]+' :  '+msg_content_body[i:i+field_item[2]*2]+' '*10
-                i += field_item[2]*2
-                if len(written_str) > 150:
-                    written_str_list.append(written_str+'\n')
-                    written_str= ''
+#                    written_str += field_item[1]+' :  '+msg_content_body[i:i+field_item[2]*2]+' '*10
+                    str_in_line = field_item[1]+' :  '+msg_content_body[i:i+field_item[2]*2]      # +' '*10
+                    if len(written_str)+len(str_in_line) > 150:
+                        written_str_list.append(written_str+'\n')
+                        written_str= ''
+                    written_str += str_in_line+' '*10
+
+                    
+                i += field_item[2]*2        # field size * 2
+#                 if len(written_str) > 150:
+#                     written_str_list.append(written_str+'\n')
+#                     written_str= ''
             written_str_list.append(written_str+'\n')
             written_str_list.append('\n\n')
             written_str= ''
@@ -162,36 +183,39 @@ if __name__ == '__main__':
 
     pmuptu_basic = pmuptu_basic_struct(pmuptu_intf_dir + 'pmuptubasicstructure.h')
 #    print_struct(pmuptu_basic.result)
-    write_to_file('pmuptubasicstructure.txt', pmuptu_basic.result)
     
     pmuptu_xdr = pmuptu_struct(pmuptu_intf_dir + 'xdrforsubsystem.h', pmuptu_basic.result)
-    write_to_file('xdrforsubsystem.txt', pmuptu_xdr.basic_struct)
     
-    pmuptu_pm = pmuptu_struct(pmuptu_intf_dir + 'pmuptupmtypes.h', pmuptu_basic.result)
-    write_to_file('pmuptupmtypes.txt', pmuptu_pm.basic_struct)
+    pmuptu_pm = pmuptu_struct(pmuptu_intf_dir + 'pmuptupmtypes.h', pmuptu_basic.result)    
     
     pmuptu_dsp = pmuptu_struct(pmuptu_intf_dir + 'pmuptudspmsginterface.h', pmuptu_basic.result+pmuptu_xdr.basic_struct+pmuptu_pm.basic_struct)
-    write_to_file('pmuptudspmsginterface.txt', pmuptu_dsp.result)
     
     pmuptu_gch = pmuptu_struct(pmuptu_intf_dir + 'pmuptugchmsginterface.h', pmuptu_basic.result)
-    write_to_file('pmuptugchmsginterface.txt', pmuptu_gch.result)
     
     pmuptu_pdch = pmuptu_struct(pmuptu_intf_dir + 'pmuptupdchmsginterface.h', pmuptu_basic.result)
-    write_to_file('pmuptupdchmsginterface.txt', pmuptu_pdch.result)    
     
     pmuptu_tbf = pmuptu_struct(pmuptu_intf_dir + 'pmuptutbfmsginterface.h', pmuptu_basic.result)
 #    print_struct(pmuptu_tbf.basic_struct)
 #    print_struct(pmuptu_tbf.result)
-    write_to_file('pmuptutbfmsginterface.txt', pmuptu_tbf.result) 
     
     pmuptu_trx = pmuptu_struct(pmuptu_intf_dir + 'pmuptutrxmsginterface.h', pmuptu_basic.result+pmuptu_xdr.basic_struct+pmuptu_pm.basic_struct)
-    write_to_file('pmuptutrxmsginterface.txt', pmuptu_trx.result)
 #     print_struct(pmuptu_trx.basic_struct)
 #     print_struct(pmuptu_trx.result)
 #     pprint(pmuptu_trx.basic_struct)
       
     pmuptu_intf_msg_list = pmuptu_dsp.result + pmuptu_gch.result + pmuptu_pdch.result + pmuptu_tbf.result + pmuptu_trx.result
     
+    pmuptu_msg_type(pmuptu_intf_dir + 'pmuptumtypeinterface.h', pmuptu_intf_msg_list)
+    write_to_file('pmuptubasicstructure.txt', pmuptu_basic.result)
+    write_to_file('xdrforsubsystem.txt', pmuptu_xdr.basic_struct)
+    write_to_file('pmuptupmtypes.txt', pmuptu_pm.basic_struct)
+    write_to_file('pmuptudspmsginterface.txt', pmuptu_dsp.result)
+    write_to_file('pmuptugchmsginterface.txt', pmuptu_gch.result)
+    write_to_file('pmuptupdchmsginterface.txt', pmuptu_pdch.result)    
+    write_to_file('pmuptutbfmsginterface.txt', pmuptu_tbf.result) 
+    write_to_file('pmuptutrxmsginterface.txt', pmuptu_trx.result)
+    
+        
 #    mfs_trace_analyser(r'mfs_trace_p_3_54.old.03-06-07-26-48.txt', pmuptu_intf_msg_list)
     mfs_trace_analyser(mfs_trace_file, pmuptu_intf_msg_list)
     

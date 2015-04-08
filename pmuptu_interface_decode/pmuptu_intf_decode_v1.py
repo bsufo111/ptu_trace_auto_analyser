@@ -11,10 +11,11 @@ from pprint import pprint
 struct_name_index = 0
 struct_name1_index = 1
 msg_name_index = 2
-union_item_num_index = 3
-struct_redecode_flag_index = 3
-struct_field_num_index = 4
-struct_total_size_index = 5
+msg_type_index = 3
+union_item_num_index = 4
+#struct_redecode_flag_index = 4
+struct_field_num_index = 5
+struct_total_size_index = 6
 
 #struct_index = -1
 
@@ -96,7 +97,7 @@ class pmuptu_basic_struct(object):
                 if 'typedef' in line and 'union' in line:
                     find_union_flag = 1
                     num = 0
-                    union.append([['','','',0]])
+                    union.append([['','','','',0]])     #[struct_name,struct_name1,msg_name,msg_type,union_item_num]
                     union_index += 1
                     continue
                 
@@ -106,7 +107,7 @@ class pmuptu_basic_struct(object):
                     linelist=line.split()
         #            linelist[2]=linelist[2].strip(' {\n')
         #            print linelist[2]
-                    result.append([['','','',0,0,0],[]])
+                    result.append([['','','','',0,0,0],[]])   #[struct_name,struct_name1,msg_name,msg_type,union_item_num,...]
                     count+=1
                     struct_index+=1
                     continue
@@ -306,6 +307,28 @@ class pmuptu_struct(pmuptu_basic_struct):
         self.pat4 = r'MESSAGE DESCRIPTION FOR PTU'  # for ptu
         self.search_list = basic_structure        
         self.pmuptu_decoder()
+
+def pmuptu_msg_type(file_name, struct_list):
+#    pfile = open(file_name,'r')
+    detect_flag = 0
+    with open(file_name, 'r') as pfile:
+        for line in pfile:
+            if 'MESSAGE TYPE FOR PTU' in line:
+                detect_flag = 1     # for message type
+            if detect_flag == 1:
+                if '#define' in line and 'CA_MT_' in line:
+                    matched_case = 0
+                    line_list = line.split()
+                    msg_name = (line_list[1].strip(' \n'))[6:]
+                    msg_type = (line_list[2].strip(' \n'))[2:]
+                    for struct_item in struct_list:
+                        if struct_item[0][msg_name_index] == msg_name:
+                            struct_item[0][msg_type_index] = msg_type
+                            matched_case = 1
+                            break
+                    if matched_case == 0:
+                        print '####### can not find msg name: '+msg_name+', '+msg_type                 
+                           
         
 def print_struct(struct_list):
     if not struct_list:
@@ -332,11 +355,12 @@ def write_to_file(file_name, struct_list):
         return
     for struct_item in struct_list:
         file.writelines(['\n'])
-        if struct_item[0][msg_name_index]:
-            msg_str = struct_item[0][msg_name_index]+', '
-        else:
-            msg_str = ''
-        header_str = struct_item[0][struct_name_index]+', '+struct_item[0][struct_name1_index]+', '+msg_str+str(struct_item[0][union_item_num_index])
+#         if struct_item[0][msg_name_index]:
+#             msg_name_str = struct_item[0][msg_name_index]
+#         else:
+#             msg_name_str = ''
+            
+        header_str = struct_item[0][struct_name_index]+', '+struct_item[0][struct_name1_index]+', '+struct_item[0][msg_name_index]+', '+struct_item[0][msg_type_index]+', '+str(struct_item[0][union_item_num_index])
         if struct_item[0][union_item_num_index] > 0:
             for i in range(struct_item[0][union_item_num_index]):
                 header_str += (', '+str(struct_item[0][struct_field_num_index+i*2])+', '+str(struct_item[0][struct_total_size_index+i*2]))
