@@ -52,8 +52,7 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
             if msg_struct_name[:7] == 'forward':
                 msg_struct_name = msg_struct_name[7:]
             msg_struct_content = line_list[4][msg_struct_index:]
-#            print msg_struct_name
-#            print msg_struct_content
+
             msg_property_right_index = msg_struct_content.find(')')
             if msg_property_right_index == -1:
                 print 'trace error!!!! lack of ")"!!!!! in line '+line_no+' in '+file_name
@@ -80,7 +79,6 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
                     print '###### can not find the next part of msg TrxSysDefineReq'
                 else:
                     msg_content += line.split(':')[-1].strip(' \n')
-                    print msg_content
             else:
                 msg_content = msg_struct_content[ptuId_index+10:].strip(' ')    #record msg content
                 
@@ -100,8 +98,6 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
 #             print time_list    
              
             msg_content_len = int(msg_content[:4],16)
-            if msg_struct_name == 'TrxSysDefineReq':
-                print msg_content_len
             msg_content_header = msg_content[:16]
             msg_content_body = msg_content[16:]
             if 2*msg_content_len > len(msg_content):
@@ -138,14 +134,12 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
                 else:
                     struct_index = 1
             else:
-                print 'enter into union_item_num !=0, it is: '+str(search_item[0][union_item_num_index])+' in msg: '+search_item[0][struct_name_index]    
                 for ii in range(int(search_item[0][union_item_num_index])):
                     if msg_content_len - 8 <= search_item[0][struct_total_size_index+ii*2]:
                         struct_index = 1+ii
                         break
                     else:
                         continue
-                print 'struct_index is: '+str(struct_index)
             if struct_index == 0:
                 print msg_struct_name+':'
                 print 'msg length is not correct:  trace msg length: '+str(msg_content_len)
@@ -176,8 +170,27 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
             written_str_list.append('\n\n')
             written_str= ''
             result_dspx_file_open_list[ptuId].writelines(written_str_list)                
-                
-            
+        elif 'dspAlarmInd' in line:
+            line = line.strip('\n')
+            line_list = line.split('|')
+            line_no = line_list[0].strip()                  # record line number
+            line_date = line_list[2].strip()                # record line date
+            line_time = line_list[3].strip()                # record line time                   
+            msg_header = line[line.find('dspAlarmInd'):]
+            ptuId = int(msg_header.split()[1][4:])
+            if ptuId > 3:
+                print '!!!!!abnormal case: ptuId > 3, in line '+line_no+' in'+file_name
+                continue
+            written_str_list = []
+            written_str_list.append('-'*100+'\n')
+            written_str = line_no+', '+'/'.join(date_list)+','+':'.join(time_list)+', '+'DSP_ALARM_IND\n\n'
+            written_str += msg_header + '\n\n'+ mfstrace_file.next().strip()[:-2]+'\n'+mfstrace_file.next().strip()+'\n'+mfstrace_file.next().strip()+'\n\n\n'
+            written_str_list.append(written_str)
+            written_str= ''
+            result_dspx_file_open_list[ptuId].writelines(written_str_list)
+                                    
+#         else:
+#             continue
                 
     for li in result_dspx_file_open_list:
         li.close()
@@ -192,7 +205,7 @@ if __name__ == '__main__':
 #     pmuptu_intf_dir = argv[2]
 #     mfs_trace_file = argv[1]
     pmuptu_intf_dir = r'pmuptu\\'
-    mfs_trace_file = r'mfs_trace_p_3_53.old.03-17-13-03-32.txt'
+    mfs_trace_file = r'mfs_trace_p_3_53.old.03-17-13-00-31.txt'
 #     print argv[0]
 #     print argv[1]
 #     print argv[2]
