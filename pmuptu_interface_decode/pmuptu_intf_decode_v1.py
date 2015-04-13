@@ -29,6 +29,7 @@ class pmuptu_basic_struct(object):
         self.pat3 = ''  # for pmu
         self.pat4 = ''  # for ptu
         self.search_list = []
+        self.define_macro = {}
         
         self.pmuptu_decoder()
         self.result = self.basic_struct
@@ -41,6 +42,7 @@ class pmuptu_basic_struct(object):
         struct_index = -1
         find_struct_flag=0   #0:not find, 1:find
         if0case=0
+        if_define_case = 0
         read_line_noneed = 0   #0:need to call readline(), 1:no need to call readline()
         field_num = 0
         total_size = 0        
@@ -50,50 +52,77 @@ class pmuptu_basic_struct(object):
         pat4 = self.pat4
         union = []
         find_union_flag = 0
+        endif_detect_stack = []
 #        result = self.basic_struct
         while True:
             if read_line_noneed == 0:
                 line = pmuptu_file.readline()
             read_line_noneed = 0
             if not line: break
-            if line.strip(' \n') == '#if 0':
+#            if line.strip(' \n') == '#if 0':
+            if '#if' in line and line.strip('\n').split() == ['#if','0']:
                 if0case+=1
+                endif_detect_stack.append(0)
+                continue
+            elif '#if' in line:         # #if defined case
+                endif_detect_stack.append(1)
+                if '_UT_' in line:
+                    if_define_case = 1
                 continue
             elif line.strip(' \n') == '#endif':
-                if0case-=1
+                if endif_detect_stack.pop() == 0:
+                    if0case-=1
                 continue
             if if0case > 0:
                 continue
-            if re.search(pat1, line):
-                line = pmuptu_file.readline()
-                if not line: break
-                if pat2 in line:
+
+            if if_define_case == 1:
+                if '#else' in line:
+                    if_define_case = 0               
+                continue
+            
+#             if re.search(pat1, line):
+#                 line = pmuptu_file.readline()
+#                 if not line: break
+            if pat2 in line:
 #                     line = pmuptu_file.readline()
 #                     if not line: break
 #                     if re.search(pat1, line):
-                    begin_struct_decoder = 1    # basic struct
-                    result = self.basic_struct
-                    struct_index = -1           # restart to count
-                    union_index = -1
-                elif pat3:
-                    if pat3 in line:
-                        begin_struct_decoder = 2    # pmu-ptu msg struct for PMU
+                begin_struct_decoder = 1    # basic struct
+                result = self.basic_struct
+                struct_index = -1           # restart to count
+                union_index = -1
+            elif pat3:
+                if pat3 in line:
+                    begin_struct_decoder = 2    # pmu-ptu msg struct for PMU
 #                        print '!!!!!!!!!!!!!enter into pmu area!!!!!!!!!!!!!'
 
-                        result = self.result
-                        struct_index = -1           # restart to count
-                        union_index = -1
+                    result = self.result
+                    struct_index = -1           # restart to count
+                    union_index = -1
 #                elif pat4:
-                    if pat4 in line:
-                        begin_struct_decoder = 3    # pmu-ptu msg struct for PTU
+                if pat4 in line:
+                    begin_struct_decoder = 3    # pmu-ptu msg struct for PTU
 #                        print '!!!!!!!!!!!!!enter into ptu area!!!!!!!!!!!!!'
-                        result = self.result
-                        struct_index = -1           # restart to count
-                        union_index = -1
-                    
+                    result = self.result
+                    struct_index = -1           # restart to count
+                    union_index = -1
+                
                     
                         
             if begin_struct_decoder >=1:
+                if '#define' in line:
+                    define_list = line.split()
+                    isnumstr = 1
+                    for char in define_list[2]:
+                        if char <'0' or char > '9':
+                            isnumstr = 0
+                            print line+' : '
+                            print 'char is: ' + define_list[2]+' hahaha!!'
+                            break
+                    if isnumstr == 1:
+                        self.define_macro[define_list[1]] = int(define_list[2])
+                
                 if 'typedef' in line and 'union' in line:
                     find_union_flag = 1
                     num = 0
@@ -170,11 +199,11 @@ class pmuptu_basic_struct(object):
                         linelist2[1]=linelist2[1].strip(' {;\n')
 #                        union[union_index][0][union_item_num_index] += 1
 
-                        if linelist2[0] == 'u_byte':
+                        if linelist2[0] == 'u_byte' or linelist2[0] == 'char' or 'INT8' in linelist2[0]:
                             size=1
-                        elif linelist2[0] == 'u_short':
+                        elif linelist2[0] == 'u_short' or 'INT16' in linelist2[0]:
                             size=2
-                        elif linelist2[0] == 'u_int':
+                        elif linelist2[0] == 'u_int' or 'INT32' in linelist2[0]:
                             size=4
                         elif '*' in linelist2[0]:
                             size=4
@@ -206,6 +235,14 @@ class pmuptu_basic_struct(object):
                         
                         struct_string=line.strip('} ,;\n')
                         result[struct_index][0][struct_name_index]=struct_string
+                        if 'dsp_dsp.h' in self.pmuptu_filename:
+                            if 'SA_DSP_ALARM_IND' in struct_string:
+                                print 'haha:'+struct_string+':haha'
+                                break
+                        if 'gpu_dspc.h' in self.pmuptu_filename:
+                            if 'SA_ERROR_MSG_HEADER' in struct_string:
+                                print 'haha:'+struct_string+':haha'
+                                break
                         line1 = pmuptu_file.readline()
                         if not line1: break
                         if not ';' in line1 and not 'typedef' in line1:
@@ -217,7 +254,8 @@ class pmuptu_basic_struct(object):
                         linelist1 = line1.split()
                         if linelist1:
                             struct_string1 = linelist1[0].strip(' ;\n')
-                            result[struct_index][0][struct_name1_index]=struct_string1               
+                            result[struct_index][0][struct_name1_index]=struct_string1
+               
                         continue
         #            elif '{' in line and not ';' in line:
                     elif not ';' in line:
@@ -231,15 +269,28 @@ class pmuptu_basic_struct(object):
                         if '[' in linelist2[1]:
                             i = linelist2[1].index('[')
                             j = linelist2[1].index(']')
-                            mul = int(linelist2[1][i+1:j])
+                            mul_str = linelist2[1][i+1:j]
+                            isnumstr = 1
+                            for char in mul_str:
+                                if char < '0' or char > '9':
+                                    isnumstr = 0
+                                    print line+' : '
+                                    print 'char is: ' + mul_str+' hahaha!!'
+                                    break
+                            if isnumstr == 1:
+                                mul = int(mul_str)
+                            else:
+                                mul = self.define_macro[mul_str]                                
+                                                                        
+#                            mul = int(linelist2[1][i+1:j])
                             linelist2[1]=linelist2[1][0:i]
 
                             
-                        if linelist2[0] == 'u_byte':
+                        if linelist2[0] == 'u_byte' or linelist2[0] == 'char' or 'INT8' in linelist2[0]:
                             size=1
-                        elif linelist2[0] == 'u_short':
+                        elif linelist2[0] == 'u_short' or 'INT16' in linelist2[0]:
                             size=2
-                        elif linelist2[0] == 'u_int':
+                        elif linelist2[0] == 'u_int' or 'INT32' in linelist2[0]:
                             size=4
                         elif '*' in linelist2[0]:
                             size=4
@@ -291,9 +342,15 @@ class pmuptu_basic_struct(object):
 #        pprint(union)
 
     def re_decode_one_struct(self, search_list, struct_name):
-        for item in search_list:
-            if item[0][struct_name_index] == struct_name or item[0][struct_name1_index] == struct_name:
-                return item        # [['','',0,0,0],[]]
+        if '_sort' in struct_name:
+            struct_name1 = struct_name[:-5]
+            for item in search_list:
+                if item[0][msg_name_index] == struct_name1:
+                    return item
+        else:
+            for item in search_list:
+                if item[0][struct_name_index] == struct_name or item[0][struct_name1_index] == struct_name:
+                    return item        # [['','',0,0,0],[]]
         return []
 
 class pmuptu_struct(pmuptu_basic_struct):
@@ -305,8 +362,45 @@ class pmuptu_struct(pmuptu_basic_struct):
         self.pat2 = r'STRUCTURE DEFINITION'
         self.pat3 = r'MESSAGE DESCRIPTION FOR PMU'  # for pmu
         self.pat4 = r'MESSAGE DESCRIPTION FOR PTU'  # for ptu
-        self.search_list = basic_structure        
+        self.search_list = basic_structure
+        self.define_macro = {}        
         self.pmuptu_decoder()
+
+class pmuptu_alarm_struct(pmuptu_basic_struct):
+    def __init__(self, filename, search_structure):
+        self.basic_struct = []
+        self.result = []
+        self.pmuptu_filename = filename
+        self.pat1 = ''
+        self.pat2 = r'SA_HARD_CODED;'
+        self.pat3 = ''
+        self.pat4 = ''
+        self.search_list = search_structure
+        self.define_macro = {}
+        self.pmuptu_decoder()
+        self.result = self.basic_struct
+        i=0
+        while i < len(self.result):
+            if not self.result[i][0][struct_name_index] == 'SA_DSP_ALARM_IND':
+                del self.result[i]
+                i -= 1
+            i += 1
+                
+
+class pmuptu_gpu_dsp_struct(pmuptu_basic_struct):
+    def __init__(self, filename, search_structure):
+        self.basic_struct = []
+        self.result = []
+        self.pmuptu_filename = filename
+        self.pat1 = ''
+        self.pat2 = r'PPC-DSP interface messages'
+        self.pat3 = ''
+        self.pat4 = ''
+        self.search_list = search_structure
+        self.define_macro = {}
+        self.pmuptu_decoder()
+        self.result = self.basic_struct
+    
 
 def pmuptu_msg_type(file_name, struct_list):
 #    pfile = open(file_name,'r')

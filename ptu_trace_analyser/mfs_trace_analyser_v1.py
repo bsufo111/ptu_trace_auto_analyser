@@ -85,7 +85,12 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
             
             temp_index = msg_content.find('[and')
             if temp_index != -1:
-                msg_content = msg_content[:temp_index]
+                temp_content = msg_content[temp_index:]
+                temp_index1 = temp_content.find("'")
+                temp_num = int(temp_content[5:temp_index1-1])
+                print '!!!!!![and '+str(temp_num)
+                temp_str = temp_content[temp_index1+1:-9]
+                msg_content = msg_content[:temp_index] + temp_str * temp_num
             
 #            print line_no+', '+line_date+', '+line_time+', '+msg_struct_name+', '+msg_property+', '+str(ptuId)+', '+msg_content
             
@@ -231,6 +236,8 @@ if __name__ == '__main__':
 #     print_struct(pmuptu_trx.basic_struct)
 #     print_struct(pmuptu_trx.result)
 #     pprint(pmuptu_trx.basic_struct)
+    pmuptu_gpu_dsp = pmuptu_gpu_dsp_struct(pmuptu_intf_dir + 'gpu_dspc.h', [])
+    pmuptu_alarm = pmuptu_alarm_struct(pmuptu_intf_dir + 'dsp_dsp.h', pmuptu_dsp.result+pmuptu_gpu_dsp.result)
       
     pmuptu_intf_msg_list = pmuptu_dsp.result + pmuptu_gch.result + pmuptu_pdch.result + pmuptu_tbf.result + pmuptu_trx.result
     
@@ -243,6 +250,8 @@ if __name__ == '__main__':
     write_to_file('pmuptupdchmsginterface.txt', pmuptu_pdch.result)    
     write_to_file('pmuptutbfmsginterface.txt', pmuptu_tbf.result) 
     write_to_file('pmuptutrxmsginterface.txt', pmuptu_trx.result)
+    write_to_file('gpu_dspc.txt', pmuptu_gpu_dsp.result)
+    write_to_file('dsp_dsp.txt', pmuptu_alarm.result)
     
         
 #    mfs_trace_analyser(r'mfs_trace_p_3_54.old.03-06-07-26-48.txt', pmuptu_intf_msg_list)
