@@ -25,62 +25,76 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
     for line in mfstrace_file:
         if len(line) <= 2:
             continue
-        if ('ptuId' in line or 'ptuid' in line) and ('incomingptumsgforwarderptu' in line or 'incomingptumsgforwardertbf' in line or 'incomingptumsgforwardertrx' in line \
+        if (('ptuId' in line or 'ptuid' in line) and ('incomingptumsgforwarderptu' in line or 'incomingptumsgforwardertbf' in line or 'incomingptumsgforwardertrx' in line \
         or 'incomingptumsgforwardertrans' in line or 'tdmptuproxy' in line or 'ipptuproxy' in line or 'dmrimpl' in line or 'dmrfortrximpl' in line \
-        or 'dmrfortbfimpl' in line or 'dmrfordspimpl' in line or 'dmrforgchimpl' in line or 'ipptuchannelcontroler' in line):
-            line = line.strip('\n')
+        or 'dmrfortbfimpl' in line or 'dmrfordspimpl' in line or 'dmrforgchimpl' in line or 'ipptuchannelcontroler' in line)) or 'DSP Post-Mortem dump' in line:
+            line = line.strip(' \n')
             line_list = line.split('|')
             line_no = line_list[0].strip()                  # record line number
             line_date = line_list[2].strip()                # record line date
             line_time = line_list[3].strip()                # record line time
             line_list1 = line_list[4].split(':')
-            line_list1[5] = line_list1[5].strip(' ')
-            msg_right_index = line_list1[5].find('(')
-            if msg_right_index == -1:
-                print 'trace error!!!! lack of "("!!!!! in line '+line_no+' in '+file_name
-                for li in result_dspx_file_open_list:
-                    li.close()
-                exit()
-            
-            msg_struct_name = line_list1[5][:msg_right_index]           # record msg struct name
-            msg_struct_index = line_list[4].find(msg_struct_name)
-            if msg_struct_index == -1:
-                print 'trace error!!!! can not find msg struct name'
-                for li in result_dspx_file_open_list:
-                    li.close()
-                exit()
-            if msg_struct_name[:7] == 'forward':
-                msg_struct_name = msg_struct_name[7:]
-            msg_struct_content = line_list[4][msg_struct_index:]
-
-            msg_property_right_index = msg_struct_content.find(')')
-            if msg_property_right_index == -1:
-                print 'trace error!!!! lack of ")"!!!!! in line '+line_no+' in '+file_name
-                for li in result_dspx_file_open_list:
-                    li.close()
-                exit()
-            
-            msg_property = msg_struct_content[msg_right_index+1:msg_property_right_index]        #record some property of this msg like tbfIndex, trxIndex
-            ptuId_index = msg_struct_content.find('ptu', msg_property_right_index)
-            if ptuId_index == -1:
-                print 'trace error!!!! lack of "ptuId"!!!!! in line '+line_no+' in '+file_name
-                for li in result_dspx_file_open_list:
-                    li.close()
-                exit()
-            ptuId = int(msg_struct_content[ptuId_index+6])       #record ptuId
-            if ptuId > 3:
-                print '!!!!!abnormal case: ptuId > 3, in line '+line_no+' in'+file_name
-                continue
-            if msg_struct_name == 'TrxSysDefineReq':
-                msg_content = msg_struct_content[ptuId_index+10+11:].strip(' ')    #record msg content
-                mfstrace_file.next()     # next line is only a \n
-                line = mfstrace_file.next()     # next line includes the next part of TrxSysDefineReq
-                if not 'TrxSysDefineReq' in line:
-                    print '###### can not find the next part of msg TrxSysDefineReq'
-                else:
-                    msg_content += line.split(':')[-1].strip(' \n')
+            if 'DSP Post-Mortem dump' in line:
+                find_post_mortem = 1
             else:
-                msg_content = msg_struct_content[ptuId_index+10:].strip(' ')    #record msg content
+                find_post_mortem = 0
+            if find_post_mortem == 0:
+                line_list1[5] = line_list1[5].strip(' ')
+                msg_right_index = line_list1[5].find('(')
+                if msg_right_index == -1:
+                    print 'trace error!!!! lack of "("!!!!! in line '+line_no+' in '+file_name
+                    for li in result_dspx_file_open_list:
+                        li.close()
+                    exit()
+                
+                msg_struct_name = line_list1[5][:msg_right_index]           # record msg struct name
+                msg_struct_index = line_list[4].find(msg_struct_name)
+                if msg_struct_index == -1:
+                    print 'trace error!!!! can not find msg struct name'
+                    for li in result_dspx_file_open_list:
+                        li.close()
+                    exit()
+                if msg_struct_name[:7] == 'forward':
+                    msg_struct_name = msg_struct_name[7:]
+                msg_struct_content = line_list[4][msg_struct_index:]
+    
+                msg_property_right_index = msg_struct_content.find(')')
+                if msg_property_right_index == -1:
+                    print 'trace error!!!! lack of ")"!!!!! in line '+line_no+' in '+file_name
+                    for li in result_dspx_file_open_list:
+                        li.close()
+                    exit()
+                
+                msg_property = msg_struct_content[msg_right_index+1:msg_property_right_index]        #record some property of this msg like tbfIndex, trxIndex
+                ptuId_index = msg_struct_content.find('ptu', msg_property_right_index)
+                if ptuId_index == -1:
+                    print 'trace error!!!! lack of "ptuId"!!!!! in line '+line_no+' in '+file_name
+                    for li in result_dspx_file_open_list:
+                        li.close()
+                    exit()
+                ptuId = int(msg_struct_content[ptuId_index+6])       #record ptuId
+                if ptuId > 3:
+                    print '!!!!!abnormal case: ptuId > 3, in line '+line_no+' in'+file_name
+                    continue
+                if msg_struct_name == 'TrxSysDefineReq':
+                    msg_content = msg_struct_content[ptuId_index+10+11:].strip(' ')    #record msg content
+                    mfstrace_file.next()     # next line is only a \n
+                    line = mfstrace_file.next()     # next line includes the next part of TrxSysDefineReq
+                    if not 'TrxSysDefineReq' in line:
+                        print '###### can not find the next part of msg TrxSysDefineReq'
+                    else:
+                        msg_content += line.split(':')[-1].strip(' \n')
+                else:
+                    msg_content = msg_struct_content[ptuId_index+10:].strip(' ')    #record msg content
+            else:
+                msg_content = line_list1[-1].strip()
+                print msg_content
+                ptuId_index1 = line.find('after DSP') + len('after DSP ')
+                ptuId_index2 = line.find(' anomalyId')
+                ptuId = int(line[ptuId_index1:ptuId_index2])
+                print 'post-mortem ptuid:' + str(ptuId)
+                msg_struct_name = 'SA_DSP_ALARM_IND'    
+                msg_name ='DSP Post-Mortem dump'                       
                 
             
             temp_index = msg_content.find('[and')
@@ -88,67 +102,67 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
                 temp_content = msg_content[temp_index:]
                 temp_index1 = temp_content.find("'")
                 temp_num = int(temp_content[5:temp_index1-1])
-                print '!!!!!![and '+str(temp_num)
+#                print '!!!!!![and '+str(temp_num)
                 temp_str = temp_content[temp_index1+1:-9]
                 msg_content = msg_content[:temp_index] + temp_str * temp_num
-            
-#            print line_no+', '+line_date+', '+line_time+', '+msg_struct_name+', '+msg_property+', '+str(ptuId)+', '+msg_content
-            
-#             written_str_list = [line_no+', '+line_date+', '+line_time+', '+msg_struct_name+', '+msg_property+', '+str(ptuId)+', '+msg_content, '\n']
-#             result_dspx_file_open_list[ptuId].writelines(written_str_list) 
               
             date_list =  [i.strip() for i in line_date.split(':')]
             time_list = [j.strip() for j in line_time.split(':')]
-#             print date_list
-#             print time_list    
-             
-            msg_content_len = int(msg_content[:4],16)
-            msg_content_header = msg_content[:16]
-            msg_content_body = msg_content[16:]
-            if 2*msg_content_len > len(msg_content):
-                msg_content_body += '0'*(2*msg_content_len-len(msg_content))
-#             print msg_content_len
-#             print msg_content_header
-#             written_str_list = [line_no+', '+'/'.join(date_list)+','+':'.join(time_list)+', ']
-#             result_dspx_file_open_list[ptuId].writelines(written_str_list)
-            msg_name = ''
-#             for search_item in pmuptu_intf_list:
-#                 if msg_struct_name.lower() == search_item[0][struct_name_index].lower() or msg_struct_name.lower() == search_item[0][struct_name1_index].lower():
-#                     msg_name = search_item[0][msg_name_index]
-#                     break
-            for search_item in pmuptu_intf_list:
-                if msg_content_header[6:8] == search_item[0][msg_type_index]:
-                    msg_name = search_item[0][msg_name_index]
-                    break
-            
-            if msg_name == '':
-                print 'can not find the struct name: '+msg_struct_name
-                continue
+
+               
+            if find_post_mortem == 0: 
+                msg_content_len = int(msg_content[:4],16)
+                msg_content_header = msg_content[:16]
+                msg_content_body = msg_content[16:]
+                if 2*msg_content_len > len(msg_content):
+                    msg_content_body += '0'*(2*msg_content_len-len(msg_content))
+                msg_name = ''
+                for search_item in pmuptu_intf_list:
+                    if msg_content_header[6:8] == search_item[0][msg_type_index]:
+                        msg_name = search_item[0][msg_name_index]
+                        break
+                if msg_name == '':
+                    print 'can not find the struct name: '+msg_struct_name
+                    continue
+                struct_index = 0
+                if search_item[0][union_item_num_index] == 0:
+                    if search_item[0][struct_total_size_index] < msg_content_len - 8:
+                        print msg_struct_name+':'
+                        print 'msg length is not correct: struct length:'+str(search_item[0][struct_total_size_index])+' , trace msg length: '+str(msg_content_len)
+                        continue
+                    else:
+                        struct_index = 1
+                else:
+                    for ii in range(int(search_item[0][union_item_num_index])):
+                        if msg_content_len - 8 <= search_item[0][struct_total_size_index+ii*2]:
+                            struct_index = 1+ii
+                            break
+                        else:
+                            continue
+                if struct_index == 0:
+                    print msg_struct_name+':'
+                    print 'msg length is not correct:  trace msg length: '+str(msg_content_len)
+                    continue
+                
+            else:
+                len_str = hex(len(msg_content)/2+2)[2:]
+                len_str = '0'*(4-len(len_str))+len_str
+                msg_content_body = len_str + msg_content
+                msg_content_header =''
+                msg_property = ''
+                struct_index = int(msg_content_body[39]) + 1
+                for search_item in pmuptu_intf_list:
+                    if search_item[0][struct_name_index] == msg_struct_name:
+                        break
+
             written_str_list = []
             written_str_list.append('-'*100+'\n')
-            written_str = line_no+', '+'/'.join(date_list)+','+':'.join(time_list)+', '+msg_name+' ( '+msg_property+' )\n\n'
-            written_str += 'header: '+msg_content_header+'\n\n'
+            written_str = line_no+', '+'/'.join(date_list)+','+':'.join(time_list)+', '+msg_name+' ( '+msg_property+' )\n'
+            written_str += 'header: '+msg_content_header+'\n'
+            written_str += 'content: '+msg_content_body+'\n\n'
             written_str_list.append(written_str)
             
-            struct_index = 0
-            if search_item[0][union_item_num_index] == 0:
-                if search_item[0][struct_total_size_index] < msg_content_len - 8:
-                    print msg_struct_name+':'
-                    print 'msg length is not correct: struct length:'+str(search_item[0][struct_total_size_index])+' , trace msg length: '+str(msg_content_len)
-                    continue
-                else:
-                    struct_index = 1
-            else:
-                for ii in range(int(search_item[0][union_item_num_index])):
-                    if msg_content_len - 8 <= search_item[0][struct_total_size_index+ii*2]:
-                        struct_index = 1+ii
-                        break
-                    else:
-                        continue
-            if struct_index == 0:
-                print msg_struct_name+':'
-                print 'msg length is not correct:  trace msg length: '+str(msg_content_len)
-                continue
+
             written_str = ''
             i = 0
             for field_item in search_item[struct_index]:
@@ -186,6 +200,8 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
             if ptuId > 3:
                 print '!!!!!abnormal case: ptuId > 3, in line '+line_no+' in'+file_name
                 continue
+            date_list =  [i.strip() for i in line_date.split(':')]
+            time_list = [j.strip() for j in line_time.split(':')]
             written_str_list = []
             written_str_list.append('-'*100+'\n')
             written_str = line_no+', '+'/'.join(date_list)+','+':'.join(time_list)+', '+'DSP_ALARM_IND\n\n'
@@ -203,17 +219,23 @@ def mfs_trace_analyser(file_name, pmuptu_intf_list):
     
 if __name__ == '__main__':
     
-#     if len(argv) < 3:
-#         print 'parameter number error, parameter list should be:'
-#         print 'pmu-ptu interface directory, mfs_trace file'
-#         exit()
+    if len(argv) < 3:
+        print 'parameter number error, parameter list should be:'
+        print 'pmu-ptu interface directory, mfs_trace file'
+        exit()
 #     pmuptu_intf_dir = argv[2]
 #     mfs_trace_file = argv[1]
-    pmuptu_intf_dir = r'pmuptu\\'
-    mfs_trace_file = r'mfs_trace_p_3_53.old.03-17-13-00-31.txt'
-#     print argv[0]
-#     print argv[1]
-#     print argv[2]
+#     pmuptu_intf_dir = r'pmuptu\\'
+#     mfs_trace_file = r'mfs_trace_p_3_54.old.03-06-07-25-57.txt'
+    mfs_trace_file = argv[1]
+    pmuptu_intf_dir = argv[2]
+    print argv[0]
+    print argv[1]
+    print argv[2]
+    print
+    
+    if pmuptu_intf_dir[-1] != '\\':
+        pmuptu_intf_dir += '\\'
 
     pmuptu_basic = pmuptu_basic_struct(pmuptu_intf_dir + 'pmuptubasicstructure.h')
 #    print_struct(pmuptu_basic.result)
@@ -239,7 +261,7 @@ if __name__ == '__main__':
     pmuptu_gpu_dsp = pmuptu_gpu_dsp_struct(pmuptu_intf_dir + 'gpu_dspc.h', [])
     pmuptu_alarm = pmuptu_alarm_struct(pmuptu_intf_dir + 'dsp_dsp.h', pmuptu_dsp.result+pmuptu_gpu_dsp.result)
       
-    pmuptu_intf_msg_list = pmuptu_dsp.result + pmuptu_gch.result + pmuptu_pdch.result + pmuptu_tbf.result + pmuptu_trx.result
+    pmuptu_intf_msg_list = pmuptu_dsp.result + pmuptu_gch.result + pmuptu_pdch.result + pmuptu_tbf.result + pmuptu_trx.result + pmuptu_alarm.result
     
     pmuptu_msg_type(pmuptu_intf_dir + 'pmuptumtypeinterface.h', pmuptu_intf_msg_list)
     write_to_file('pmuptubasicstructure.txt', pmuptu_basic.result)
