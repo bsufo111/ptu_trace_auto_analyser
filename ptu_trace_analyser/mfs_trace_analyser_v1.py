@@ -19,24 +19,26 @@ def mfs_trace_analyser(file_name_dir, file_name_list, pmuptu_intf_list):
     result_dspx_file_open_list = []
     error_index = 4
     log_index = 5   
-    for file_item in file_name_list:
-        file_name = file_name_dir + file_item
+    count = 0
+    total_num = len(file_name_list)
+    for file_name in file_name_list:
+        file_path_name = file_name_dir + file_name
         
         if len(file_name_list) == 1:
             if file_name[-4:] == '.txt':
                 decode_file_name = file_name[:-4]
             else:
                 decode_file_name = file_name
-            print file_name_dir
-            print file_name_list
-            print decode_file_name
+#             print file_name_dir
+#             print file_name_list
+#             print decode_file_name
             for i in range(4):
-                result_dspx_file_open_list.append(open(decode_file_name +'_dsp'+str(i)+'.txt','w+'))
-            result_dspx_file_open_list.append(open(decode_file_name+'_error'+'.txt','w+')) 
-            result_dspx_file_open_list.append(open(decode_file_name+'_log'+'.txt','w+')) 
+                result_dspx_file_open_list.append(open(file_name_dir + decode_file_name +'_dsp'+str(i)+'.txt','w+'))
+            result_dspx_file_open_list.append(open(file_name_dir + decode_file_name+'_error'+'.txt','w+')) 
+            result_dspx_file_open_list.append(open(file_name_dir + decode_file_name+'_log'+'.txt','w+')) 
                 
-        elif file_item[:16] != decode_file_name:
-            decode_file_name = file_item[:16]
+        elif file_name[:16] != decode_file_name:
+            decode_file_name = file_name[:16]
             if len(result_dspx_file_open_list) >0:
                 for li in result_dspx_file_open_list:
                     li.close()                
@@ -46,7 +48,8 @@ def mfs_trace_analyser(file_name_dir, file_name_list, pmuptu_intf_list):
             result_dspx_file_open_list.append(open(file_name_dir + decode_file_name+'_error'+'.txt','w+'))        
             result_dspx_file_open_list.append(open(file_name_dir + decode_file_name+'_log'+'.txt','w+'))        
                 
-        mfstrace_file = open(file_name, 'r')
+        mfstrace_file = open(file_path_name, 'r')
+        count += 1
     #    line = mfstrace_file.readline()
         if not mfstrace_file:
             log_str = '\n!!Error: can not find file: '+file_name+'\n'
@@ -55,8 +58,9 @@ def mfs_trace_analyser(file_name_dir, file_name_list, pmuptu_intf_list):
             mfstrace_file.close()
             continue
         
-        log_str = '>>> Start decoding trace '+file_item+'\n'
-        print log_str
+        log_str = '>>> Start decoding trace '+file_name+'\n'
+#        print log_str
+        print '>>> Start decoding trace '+file_name+', '+str(count)+'/'+str(total_num)+'\r',
 #         for li in result_dspx_file_open_list:
 #             li.writelines([log_str,'\n'])
         for result_index in range(5):
@@ -326,8 +330,8 @@ def mfs_trace_analyser(file_name_dir, file_name_list, pmuptu_intf_list):
                 result_dspx_file_open_list[ptuId].writelines(written_str_list)
                                         
         mfstrace_file.close()
-#        print '<<< Finish decoding trace '+file_item
-        log_str = '<<< Finish decoding trace '+file_item+'\n'
+#        print '<<< Finish decoding trace '+file_name
+        log_str = '<<< Finish decoding trace '+file_name+'\n'
 #        print log_str
 #         for li in result_dspx_file_open_list:
 #             li.writelines([log_str,'\n'])    
@@ -340,18 +344,26 @@ def mfs_trace_analyser(file_name_dir, file_name_list, pmuptu_intf_list):
     
 if __name__ == '__main__':
     
-    if len(argv) < 3:
-        print 'parameter number error, parameter list should be:'
-        print 'pmu-ptu interface directory, mfs_trace file'
-        exit()
-
-    mfs_trace_dir = argv[1]
-    pmuptu_intf_dir = argv[2]
-    print argv[0]
-    print argv[1]
-    print argv[2]
+#     if len(argv) < 3:
+#         print 'parameter number error, parameter list should be:'
+#         print 'pmu-ptu interface directory, mfs_trace file'
+#         exit()
+# 
+#     mfs_trace_dir = argv[1]
+#     pmuptu_intf_dir = argv[2]
+#     print argv[0]
+#     print argv[1]
+#     print argv[2]
+#     print
     print
-    
+    mfs_trace_dir = raw_input("Please input mfs trace file name or directory name:\n(E.g. D:\\trace\\1.txt or D:\\trace) \n")
+    pmuptu_intf_dir = raw_input("Please input pmu-ptu interface files directory name:\n(E.g. D:\\trace\\pmuptu) \n")
+    print
+    print mfs_trace_dir
+    print pmuptu_intf_dir
+    if not (mfs_trace_dir and pmuptu_intf_dir):
+        print 'Incorrect file name or directory name..'
+        exit()
     if pmuptu_intf_dir[-1] != '\\':
         pmuptu_intf_dir += '\\'
 
@@ -406,14 +418,20 @@ if __name__ == '__main__':
             index += 1
         mfs_trace_list.sort()
     else:
-        mfs_trace_list= [mfs_trace_dir]
-        mfs_trace_dir = ''  
+#         mfs_trace_list= [mfs_trace_dir]
+#         mfs_trace_dir = ''  
+        mfs_trace_dir, mfs_trace_file = os.path.split(mfs_trace_dir)
+        mfs_trace_list= [mfs_trace_file]
+        if mfs_trace_dir[-1] != '\\':
+            mfs_trace_dir += '\\'
 
     print        
     print '###################################################'
     print
+    print 'Totally '+str(len(mfs_trace_list))+' mfs_trace files to be decoded'
         
     mfs_trace_analyser(mfs_trace_dir, mfs_trace_list, pmuptu_intf_msg_list)
     print
     print '##################### DONE ########################'
+    raw_input('Press enter to exit normally...')
     
