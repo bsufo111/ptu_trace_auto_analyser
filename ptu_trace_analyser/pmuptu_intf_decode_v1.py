@@ -148,7 +148,7 @@ class pmuptu_basic_struct(object):
                     typedef_decode_list1 = copy.deepcopy(typedef_decode_list)
 #                     print typedef_decode_list1
 #                     print typedef_list_pmu
-                    write_to_file('test.txt', self.search_list+self.basic_struct+self.result)
+#                    write_to_file('test.txt', self.search_list+self.basic_struct+self.result)
 
                     typedef_decode_list1[0][struct_name_index] = typedef_list_pmu[2]
                     typedef_decode_list1[0][struct_name1_index] = typedef_list_pmu[2]+'_t'

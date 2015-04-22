@@ -355,83 +355,88 @@ if __name__ == '__main__':
 #     print argv[1]
 #     print argv[2]
 #     print
-    print
-    mfs_trace_dir = raw_input("Please input mfs trace file name or directory name:\n(E.g. D:\\trace\\1.txt or D:\\trace) \n")
-    pmuptu_intf_dir = raw_input("Please input pmu-ptu interface files directory name:\n(E.g. D:\\trace\\pmuptu) \n")
-    print
-    print mfs_trace_dir
-    print pmuptu_intf_dir
-    if not (mfs_trace_dir and pmuptu_intf_dir):
-        print 'Incorrect file name or directory name..'
-        exit()
-    if pmuptu_intf_dir[-1] != '\\':
-        pmuptu_intf_dir += '\\'
-
-    pmuptu_basic = pmuptu_basic_struct(pmuptu_intf_dir + 'pmuptubasicstructure.h')
+    try:
+        print
+        mfs_trace_dir = raw_input("Please input mfs trace file name or directory name:\n(E.g. D:\\trace\\1.txt or D:\\trace) \n")
+        pmuptu_intf_dir = raw_input("Please input pmu-ptu interface files directory name:\n(E.g. D:\\trace\\pmuptu) \n")
+        print
+        print mfs_trace_dir
+        print pmuptu_intf_dir
+        if not (mfs_trace_dir and pmuptu_intf_dir):
+            print 'Incorrect file name or directory name..'
+            exit()
+        if pmuptu_intf_dir[-1] != '\\':
+            pmuptu_intf_dir += '\\'
     
-    pmuptu_xdr = pmuptu_struct(pmuptu_intf_dir + 'xdrforsubsystem.h', pmuptu_basic.result)
-    
-    pmuptu_pm = pmuptu_struct(pmuptu_intf_dir + 'pmuptupmtypes.h', pmuptu_basic.result)    
-    
-    pmuptu_dsp = pmuptu_struct(pmuptu_intf_dir + 'pmuptudspmsginterface.h', pmuptu_basic.result+pmuptu_xdr.basic_struct+pmuptu_pm.basic_struct)
-    
-    pmuptu_gch = pmuptu_struct(pmuptu_intf_dir + 'pmuptugchmsginterface.h', pmuptu_basic.result)
-    
-    pmuptu_pdch = pmuptu_struct(pmuptu_intf_dir + 'pmuptupdchmsginterface.h', pmuptu_basic.result)
-    
-    pmuptu_tbf = pmuptu_struct(pmuptu_intf_dir + 'pmuptutbfmsginterface.h', pmuptu_basic.result)
-    
-    pmuptu_trx = pmuptu_struct(pmuptu_intf_dir + 'pmuptutrxmsginterface.h', pmuptu_basic.result+pmuptu_xdr.basic_struct+pmuptu_pm.basic_struct)
-
-    pmuptu_gpu_dsp = pmuptu_gpu_dsp_struct(pmuptu_intf_dir + 'gpu_dspc.h', [])
-    pmuptu_alarm = pmuptu_alarm_struct(pmuptu_intf_dir + 'dsp_dsp.h', pmuptu_dsp.result+pmuptu_gpu_dsp.result)
-      
-    pmuptu_intf_msg_list = pmuptu_dsp.result + pmuptu_gch.result + pmuptu_pdch.result + pmuptu_tbf.result + pmuptu_trx.result + pmuptu_alarm.result
-    
-    pmuptu_msg_type(pmuptu_intf_dir + 'pmuptumtypeinterface.h', pmuptu_intf_msg_list)
-    
-    write_to_file(pmuptu_intf_dir + 'pmuptubasicstructure.txt', pmuptu_basic.result)
-    write_to_file(pmuptu_intf_dir + 'xdrforsubsystem.txt', pmuptu_xdr.basic_struct)
-    write_to_file(pmuptu_intf_dir + 'pmuptupmtypes.txt', pmuptu_pm.basic_struct)
-    write_to_file(pmuptu_intf_dir + 'pmuptudspmsginterface.txt', pmuptu_dsp.result)
-    write_to_file(pmuptu_intf_dir + 'pmuptugchmsginterface.txt', pmuptu_gch.result)
-    write_to_file(pmuptu_intf_dir + 'pmuptupdchmsginterface.txt', pmuptu_pdch.result)    
-    write_to_file(pmuptu_intf_dir + 'pmuptutbfmsginterface.txt', pmuptu_tbf.result) 
-    write_to_file(pmuptu_intf_dir + 'pmuptutrxmsginterface.txt', pmuptu_trx.result)
-    write_to_file(pmuptu_intf_dir + 'gpu_dspc.txt', pmuptu_gpu_dsp.result)
-    write_to_file(pmuptu_intf_dir + 'dsp_dsp.txt', pmuptu_alarm.result)
-
-    print
+        pmuptu_basic = pmuptu_basic_struct(pmuptu_intf_dir + 'pmuptubasicstructure.h')
         
-    if os.path.isdir(mfs_trace_dir):
-        print 'dir: '+mfs_trace_dir
+        pmuptu_xdr = pmuptu_struct(pmuptu_intf_dir + 'xdrforsubsystem.h', pmuptu_basic.result)
+        
+        pmuptu_pm = pmuptu_struct(pmuptu_intf_dir + 'pmuptupmtypes.h', pmuptu_basic.result)    
+        
+        pmuptu_dsp = pmuptu_struct(pmuptu_intf_dir + 'pmuptudspmsginterface.h', pmuptu_basic.result+pmuptu_xdr.basic_struct+pmuptu_pm.basic_struct)
+        
+        pmuptu_gch = pmuptu_struct(pmuptu_intf_dir + 'pmuptugchmsginterface.h', pmuptu_basic.result)
+        
+        pmuptu_pdch = pmuptu_struct(pmuptu_intf_dir + 'pmuptupdchmsginterface.h', pmuptu_basic.result)
+        
+        pmuptu_tbf = pmuptu_struct(pmuptu_intf_dir + 'pmuptutbfmsginterface.h', pmuptu_basic.result)
+        
+        pmuptu_trx = pmuptu_struct(pmuptu_intf_dir + 'pmuptutrxmsginterface.h', pmuptu_basic.result+pmuptu_xdr.basic_struct+pmuptu_pm.basic_struct)
+    
+        pmuptu_gpu_dsp = pmuptu_gpu_dsp_struct(pmuptu_intf_dir + 'gpu_dspc.h', [])
+        pmuptu_alarm = pmuptu_alarm_struct(pmuptu_intf_dir + 'dsp_dsp.h', pmuptu_dsp.result+pmuptu_gpu_dsp.result)
+          
+        pmuptu_intf_msg_list = pmuptu_dsp.result + pmuptu_gch.result + pmuptu_pdch.result + pmuptu_tbf.result + pmuptu_trx.result + pmuptu_alarm.result
+        
+        pmuptu_msg_type(pmuptu_intf_dir + 'pmuptumtypeinterface.h', pmuptu_intf_msg_list)
+        
+        write_to_file(pmuptu_intf_dir + 'pmuptubasicstructure.txt', pmuptu_basic.result)
+        write_to_file(pmuptu_intf_dir + 'xdrforsubsystem.txt', pmuptu_xdr.basic_struct)
+        write_to_file(pmuptu_intf_dir + 'pmuptupmtypes.txt', pmuptu_pm.basic_struct)
+        write_to_file(pmuptu_intf_dir + 'pmuptudspmsginterface.txt', pmuptu_dsp.result)
+        write_to_file(pmuptu_intf_dir + 'pmuptugchmsginterface.txt', pmuptu_gch.result)
+        write_to_file(pmuptu_intf_dir + 'pmuptupdchmsginterface.txt', pmuptu_pdch.result)    
+        write_to_file(pmuptu_intf_dir + 'pmuptutbfmsginterface.txt', pmuptu_tbf.result) 
+        write_to_file(pmuptu_intf_dir + 'pmuptutrxmsginterface.txt', pmuptu_trx.result)
+        write_to_file(pmuptu_intf_dir + 'gpu_dspc.txt', pmuptu_gpu_dsp.result)
+        write_to_file(pmuptu_intf_dir + 'dsp_dsp.txt', pmuptu_alarm.result)
+    
+        print
             
-        if mfs_trace_dir[-1] != '\\':
-            mfs_trace_dir += '\\'
-        
-        mfs_trace_list = os.listdir(mfs_trace_dir)
-        index = 0
-        while index < len(mfs_trace_list):
-            if os.path.isdir(mfs_trace_dir+mfs_trace_list[index]) or len(mfs_trace_list[index]) < 16 or mfs_trace_list[index][:12] != 'mfs_trace_p_' or 'dsp' in mfs_trace_list[index] or 'error' in mfs_trace_list[index] or 'log' in mfs_trace_list[index]:
-                del mfs_trace_list[index]
-                index -= 1
-            index += 1
-        mfs_trace_list.sort()
-    else:
-#         mfs_trace_list= [mfs_trace_dir]
-#         mfs_trace_dir = ''  
-        mfs_trace_dir, mfs_trace_file = os.path.split(mfs_trace_dir)
-        mfs_trace_list= [mfs_trace_file]
-        if mfs_trace_dir[-1] != '\\':
-            mfs_trace_dir += '\\'
-
-    print        
-    print '###################################################'
-    print
-    print 'Totally '+str(len(mfs_trace_list))+' mfs_trace files to be decoded'
-        
-    mfs_trace_analyser(mfs_trace_dir, mfs_trace_list, pmuptu_intf_msg_list)
-    print
-    print '##################### DONE ########################'
-    raw_input('Press enter to exit normally...')
+        if os.path.isdir(mfs_trace_dir):
+            print 'dir: '+mfs_trace_dir
+                
+            if mfs_trace_dir[-1] != '\\':
+                mfs_trace_dir += '\\'
+            
+            mfs_trace_list = os.listdir(mfs_trace_dir)
+            index = 0
+            while index < len(mfs_trace_list):
+                if os.path.isdir(mfs_trace_dir+mfs_trace_list[index]) or len(mfs_trace_list[index]) < 16 or mfs_trace_list[index][:12] != 'mfs_trace_p_' or 'dsp' in mfs_trace_list[index] or 'error' in mfs_trace_list[index] or 'log' in mfs_trace_list[index]:
+                    del mfs_trace_list[index]
+                    index -= 1
+                index += 1
+            mfs_trace_list.sort()
+        else:
+    #         mfs_trace_list= [mfs_trace_dir]
+    #         mfs_trace_dir = ''  
+            mfs_trace_dir, mfs_trace_file = os.path.split(mfs_trace_dir)
+            mfs_trace_list= [mfs_trace_file]
+            if mfs_trace_dir[-1] != '\\':
+                mfs_trace_dir += '\\'
     
+        print        
+        print '###################################################'
+        print
+        print 'Totally '+str(len(mfs_trace_list))+' mfs_trace files to be decoded'
+            
+        mfs_trace_analyser(mfs_trace_dir, mfs_trace_list, pmuptu_intf_msg_list)
+        print
+        print '##################### DONE ########################'
+        raw_input('Press enter to exit normally...')
+    except Exception, e:
+        print
+        print e
+        print
+        raw_input('Press enter to terminate the program...')
