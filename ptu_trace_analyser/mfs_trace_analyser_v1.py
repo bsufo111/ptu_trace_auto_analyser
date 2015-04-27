@@ -363,8 +363,9 @@ if __name__ == '__main__':
         print mfs_trace_dir
         print pmuptu_intf_dir
         if not (mfs_trace_dir and pmuptu_intf_dir):
-            print 'Incorrect file name or directory name..'
-            exit()
+            print 'File name or directory name should not be none!!\n'
+            raw_input('Press enter to terminate the program...')
+            sys.exit()
         if pmuptu_intf_dir[-1] != '\\':
             pmuptu_intf_dir += '\\'
     
